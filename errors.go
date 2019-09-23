@@ -3,8 +3,10 @@ package userstack
 import "fmt"
 
 type ApiErr struct {
-	Success bool `json:"success,omitempty"`
-	Err     struct {
+	// Most unfortunate this "success" is also not returned in the successful state.
+	Success *bool `json:"success"`
+
+	Err struct {
 		Code int       `json:"code,omitempty"`
 		Type ErrorType `json:"type,omitempty"`
 		Info string    `json:"info,omitempty"`

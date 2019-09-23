@@ -38,7 +38,8 @@ var defaultClient = &http.Client{
 // get access to `https`.
 func NewClient(apiKey string, secure bool, options ...Option) (*Client, error) {
 	if apiKey == "" {
-		err := ApiErr{Success: false}
+		b := false
+		err := ApiErr{Success: &b}
 		err.Err.Type = ErrMissingAccessKey
 		err.Err.Code = codeFromErrorType(ErrMissingAccessKey)
 		err.Err.Info = "User did not supply an access key."
