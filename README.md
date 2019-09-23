@@ -28,7 +28,7 @@ Have fun. Please, use this client and the apilayer service to improve user exper
 
 ### Example usage - single lookup (HTTP GET)
 
-```
+```go
 c, err := userstack.NewClient(key, nil, false)
 if err != nil {
     // handler err
