@@ -2,6 +2,19 @@ package userstack
 
 import "fmt"
 
+type ApiErr struct {
+	Success bool `json:"success,omitempty"`
+	Err     struct {
+		Code int       `json:"code,omitempty"`
+		Type ErrorType `json:"type,omitempty"`
+		Info string    `json:"info,omitempty"`
+	} `json:"error,omitempty"`
+}
+
+func (e *ApiErr) Error() string {
+	return fmt.Sprintf("%d: %s", e.Err.Code, e.Err.Info)
+}
+
 // ErrorType represents a userstack error type.
 type ErrorType string
 
