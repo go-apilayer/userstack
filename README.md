@@ -20,7 +20,7 @@ Well-defined types are available: `entity`, `device`, `category` and `api error`
 
 Users can supply their own HTTP Client implementation. Otherwise just pass nil to `NewClient` and a default client is used with sane defaults.
 
-This library will return a custom error, `ApiErr`, which callers can assert to get at the raw message and code. If using go1.13 use `errors.As` for assertions, otherwise a regular type switch will do. This is especially useful for `104` errors, which means monthly usage limit has been exceeded.
+This library will return a pointer to a custom error, `ApiErr`, which callers can assert to get at the raw message and code. If using go1.13 use `errors.As` for assertions, otherwise a regular type switch will do. This is especially useful for `104` errors, which means monthly usage limit has been exceeded.
 
 Crawler information is only available for Basic Plan or higher. So if you don't see this in the response, check plan.
 
@@ -38,7 +38,7 @@ ua := "Mozilla/5.0 (Linux; Android 9; Pixel 2 Build/PQ3A.190801.002; wv) AppleWe
 
 data, err := c.Detect(ua)
 if err != nil {
-    var e userstack.ApiErr
+    var e *userstack.ApiErr
     if errors.As(err, &e) {
         // handler error of type ApiErr
     }
