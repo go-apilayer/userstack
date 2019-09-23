@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,30 +18,34 @@ const (
 // defaultClient returns an http client with sane defaults. Users can
 // instantiate a NewClient with their own http handler, but this should
 // suffice for more use-cases.
-func defaultClient() *http.Client {
-	client := http.Client{
-		Transport: &http.Transport{
-			DialContext: (&net.Dialer{
-				Timeout:   10 * time.Second,
-				KeepAlive: 10 * time.Second,
-			}).DialContext,
-			TLSHandshakeTimeout: 10 * time.Second,
+var defaultClient = &http.Client{
+	Transport: &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 10 * time.Second,
+		}).DialContext,
+		TLSHandshakeTimeout: 10 * time.Second,
 
-			ExpectContinueTimeout: 10 * time.Second,
-			ResponseHeaderTimeout: 10 * time.Second,
-		},
-		Timeout: 60 * time.Second,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-
-	return &client
+		ExpectContinueTimeout: 10 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+	},
+	Timeout: 60 * time.Second,
+	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	},
 }
 
 type Client struct {
 	client HTTPClient
 	url    *url.URL
+
+	debug bool
+}
+
+func (c *Client) debugf(format string, v ...interface{}) {
+	if c.debug {
+		log.Printf("go-apilayer/userstack: %v\n", v)
+	}
 }
 
 type Stack struct {
@@ -79,7 +84,7 @@ type Stack struct {
 		LastSeen  interface{}  `json:"last_seen"` // TODO(mf): find out the type of this. string?
 	} `json:"crawler"`
 
-	ApiErr
+	*ApiErr `json:",omitempty"`
 }
 
 type ApiErr struct {
@@ -91,7 +96,7 @@ type ApiErr struct {
 	} `json:"error,omitempty"`
 }
 
-func (e ApiErr) Error() string {
+func (e *ApiErr) Error() string {
 	return fmt.Sprintf("%d: %s", e.Err.Code, e.Err.Info)
 }
 
@@ -116,6 +121,8 @@ func (c *Client) Detect(userAgent string) (*Stack, error) {
 	}
 	defer resp.Body.Close()
 
+	c.debugf("HTTP GET:%d header:%+v", resp.StatusCode, resp.Header)
+
 	// Invalid requests may return 200 OK with custom error body.
 	// Not safe to rely on HTTP response codes for decoding.
 
@@ -124,8 +131,9 @@ func (c *Client) Detect(userAgent string) (*Stack, error) {
 		return nil, err
 	}
 
-	if !st.Success && st.Ua == "" {
+	if st.ApiErr != nil && !st.ApiErr.Success {
 		return nil, st.ApiErr
+
 	}
 
 	return st, nil
@@ -140,23 +148,37 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// NewClient returns a userstack client. If nil http client is supplied a default client
-// with sane defaults is used.
+// Option is a functional option to modify the underlying Client.
+type Option func(*Client)
+
+// OptionHTTPClient - provide a custom http client to the client.
+func OptionHTTPClient(client HTTPClient) func(*Client) {
+	return func(c *Client) {
+		c.client = client
+	}
+}
+
+// OptionDebug enable debugging for the client.
+func OptionDebug(b bool) func(*Client) {
+	return func(c *Client) {
+		c.debug = b
+	}
+}
+
+// NewClient returns a userstack client. Users can modify clients with functional options.
 //
 // Note: if you have a non-paying account, you must specify secure: false. Only paid accounts
 // get access to `https`.
-func NewClient(apiKey string, client HTTPClient, secure bool) (*Client, error) {
+func NewClient(apiKey string, secure bool, options ...Option) (*Client, error) {
 	if apiKey == "" {
-		err := ApiErr{Success: false}
+		err := &ApiErr{Success: false}
 		err.Err.Type = ErrMissingAccessKey
 		err.Err.Code = codeFromErrorType(ErrMissingAccessKey)
 		err.Err.Info = "User did not supply an access key."
 		return nil, err
 	}
 
-	c := Client{
-		client: client,
-	}
+	c := &Client{client: defaultClient}
 
 	u := &url.URL{
 		Scheme: "http", // Unpaid accounts do not have access to https, sadly.
@@ -171,11 +193,11 @@ func NewClient(apiKey string, client HTTPClient, secure bool) (*Client, error) {
 
 	c.url = u
 
-	if c.client == nil {
-		c.client = defaultClient()
+	for _, opt := range options {
+		opt(c)
 	}
 
-	return &c, nil
+	return c, nil
 }
 
 type EntityType int
@@ -220,7 +242,7 @@ func (e *EntityType) UnmarshalText(text []byte) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("unknown entity type: %s", enum)
+	return fmt.Errorf("unknown userstack entity type: %s", enum)
 }
 
 type DeviceType int
@@ -263,7 +285,7 @@ func (d *DeviceType) UnmarshalText(text []byte) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("unknown device type: %s", enum)
+	return fmt.Errorf("unknown userstack device type: %s", enum)
 }
 
 type CategoryType int
@@ -304,5 +326,5 @@ func (c *CategoryType) UnmarshalText(text []byte) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("unknown category type: %s", enum)
+	return fmt.Errorf("unknown userstack category type: %s", enum)
 }
