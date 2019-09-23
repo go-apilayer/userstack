@@ -3,6 +3,7 @@ package userstack
 import (
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -104,17 +105,27 @@ func (c *Client) Detect(userAgent string) (*Stack, error) {
 
 	c.debugf("HTTP GET:%d header:%+v", resp.StatusCode, resp.Header)
 
-	// Invalid requests may return 200 OK with custom error body.
-	// Not safe to rely on HTTP response codes for decoding.
+	// Not safe to rely on HTTP status codes for unmarshalling. API returns 200 for both
+	// successful and error states.
+	// We're also not going to embed the error inside the struct to avoid
+	// printing issues: github.com/golang/go/issues/34464.
 
-	var st *Stack
-	if err := c.decode(resp.Body, &st); err != nil {
+	by, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
-	if st.ApiErr != nil && !st.ApiErr.Success {
-		return nil, st.ApiErr
+	var apiErr *ApiErr
+	if err := json.Unmarshal(by, &apiErr); err != nil {
+		return nil, err
+	}
+	if apiErr.Success != nil && !*apiErr.Success {
+		return nil, apiErr
+	}
 
+	var st *Stack
+	if err := json.Unmarshal(by, &st); err != nil {
+		return nil, err
 	}
 
 	return st, nil
@@ -159,14 +170,4 @@ type Stack struct {
 		Category  CategoryType `json:"category"`
 		LastSeen  string       `json:"last_seen"` // "2019-09-15 20:35:33"
 	} `json:"crawler"`
-
-	*ApiErr `json:",omitempty"`
-}
-
-// This is a workaround to prevent embedded ApiError.Error from
-// shadowing Stack struct prints due to Go's native priority: error > Stringer.
-// TODO(mf): github.com/golang/go/issues/34464
-func (s *Stack) Error() string {
-	by, _ := json.Marshal(s)
-	return string(by)
 }
