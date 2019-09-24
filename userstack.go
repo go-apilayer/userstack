@@ -2,6 +2,7 @@ package userstack
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -77,7 +78,18 @@ type Client struct {
 
 func (c *Client) debugf(format string, v ...interface{}) {
 	if c.debug {
-		log.Printf("go-apilayer/userstack: %v\n", v)
+		for i := range v {
+			if u, ok := v[i].(*url.URL); ok && u != nil {
+				copy := new(url.URL)
+				*copy = *u
+				q := copy.Query()
+				q.Set("access_key", "hidden")
+				copy.RawQuery = q.Encode()
+				v[i] = copy
+			}
+		}
+		msg := fmt.Sprintf(format, v...)
+		log.Println("go-apilayer/userstack:", msg)
 	}
 }
 
@@ -90,6 +102,8 @@ func (c *Client) Detect(userAgent string) (*Stack, error) {
 	q := u.Query()
 	q.Add("ua", userAgent)
 	u.RawQuery = q.Encode()
+
+	c.debugf("HTTP request: %v", u)
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
