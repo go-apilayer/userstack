@@ -2,7 +2,6 @@ package userstack
 
 import (
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -129,10 +128,6 @@ func (c *Client) Detect(userAgent string) (*Stack, error) {
 	}
 
 	return st, nil
-}
-
-func (c *Client) decode(r io.Reader, v interface{}) error {
-	return json.NewDecoder(r).Decode(v)
 }
 
 type Stack struct {
