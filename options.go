@@ -35,7 +35,7 @@ func OptionDebug(b bool) func(*Client) {
 // OptionStrictMode forces custom UnmarshalText on well-known types.
 // Will cause client to error if userstack API returns a type the
 // client cannot express as a typed string constant.
-func OptionStrictMode(b bool) func(*Client) {
+func OptionStrictMode() func(*Client) {
 	return func(c *Client) {
 		strictUnmarshal = true
 	}
