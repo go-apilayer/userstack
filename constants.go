@@ -1,132 +1,127 @@
 package userstack
 
-import "fmt"
-
-type EntityType int
+type EntityType string
 
 const (
-	UnknownEntity EntityType = iota
-	Browser
-	MobileBrowser
-	EmailClient
-	App
-	FeedReader
-	Crawler
-	OfflineBrowser
+	EntityUnknown        EntityType = "unknown"
+	EntityBrowser        EntityType = "browser"
+	EntityMobileBrowser  EntityType = "mobile-browser"
+	EntityEmailClient    EntityType = "email-client"
+	EntityApp            EntityType = "app"
+	EntityFeedReader     EntityType = "feed-reader"
+	EntityCrawler        EntityType = "crawler"
+	EntityOfflineBrowser EntityType = "offline-browser"
 )
 
-var entities = []string{
-	"unknown",
-	"browser",
-	"mobile-browser",
-	"email-client",
-	"app",
-	"feed-reader",
-	"crawler",
-	"offline-browser",
-}
-
-func (e EntityType) String() string {
-	return entities[e]
-}
-
-// MarshalText satisfies TextMarshaler
-func (e EntityType) MarshalText() ([]byte, error) {
-	return []byte(e.String()), nil
-}
+func (e EntityType) String() string { return string(e) }
 
 // UnmarshalText satisfies TextUnmarshaler
 func (e *EntityType) UnmarshalText(text []byte) error {
 	enum := string(text)
-	for i := 0; i < len(entities); i++ {
-		if enum == entities[i] {
-			*e = EntityType(i)
-			return nil
-		}
+	if !strictUnmarshal {
+		*e = EntityType(enum)
+		return nil
 	}
-	return fmt.Errorf("unknown userstack entity type: %s", enum)
+	switch enum {
+	case "unknown":
+		*e = EntityUnknown
+	case "browser":
+		*e = EntityBrowser
+	case "mobile-browser":
+		*e = EntityMobileBrowser
+	case "email-client":
+		*e = EntityEmailClient
+	case "app":
+		*e = EntityApp
+	case "feed-reader":
+		*e = EntityFeedReader
+	case "crawler":
+		*e = EntityCrawler
+	case "offline-browser":
+		*e = EntityOfflineBrowser
+	default:
+		return &UnsupportedTypeError{typ: enum, fieldName: "entity"}
+	}
+	return nil
 }
 
-type DeviceType int
+type DeviceType string
 
 const (
-	UnknownDevice DeviceType = iota
-	Desktop
-	Tablet
-	Smartphone
-	Console
-	Smarttv
-	Wearable
+	DeviceUnknown    DeviceType = "unknown"
+	DeviceDesktop    DeviceType = "desktop"
+	DeviceTablet     DeviceType = "tablet"
+	DeviceSmartPhone DeviceType = "smartphone"
+	DeviceConsole    DeviceType = "console"
+	DeviceSmartTV    DeviceType = "smarttv"
+	DeviceWearable   DeviceType = "wearable"
 )
 
-var devices = []string{
-	"unknown",
-	"desktop",
-	"tablet",
-	"smartphone",
-	"console",
-	"smarttv",
-	"wearable",
-}
-
-func (d DeviceType) String() string {
-	return devices[d]
-}
-
-// MarshalText satisfies TextMarshaler
-func (d DeviceType) MarshalText() ([]byte, error) {
-	return []byte(d.String()), nil
-}
+func (d DeviceType) String() string { return string(d) }
 
 // UnmarshalText satisfies TextUnmarshaler
 func (d *DeviceType) UnmarshalText(text []byte) error {
 	enum := string(text)
-	for i := 0; i < len(devices); i++ {
-		if enum == devices[i] {
-			*d = DeviceType(i)
-			return nil
-		}
+	if !strictUnmarshal {
+		*d = DeviceType(enum)
+		return nil
 	}
-	return fmt.Errorf("unknown userstack device type: %s", enum)
+	switch enum {
+	case "unknown":
+		*d = DeviceUnknown
+	case "desktop":
+		*d = DeviceDesktop
+	case "tablet":
+		*d = DeviceTablet
+	case "smartphone":
+		*d = DeviceSmartPhone
+	case "console":
+		*d = DeviceConsole
+	case "smarttv":
+		*d = DeviceSmartTV
+	case "wearable":
+		*d = DeviceWearable
+	default:
+		return &UnsupportedTypeError{typ: enum, fieldName: "device"}
+	}
+	return nil
 }
 
-type CategoryType int
+type CategoryType string
 
 const (
-	UnknownCategory CategoryType = iota
-	SearchEngine
-	Monitoring
-	ScreenshotService
-	Scraper
-	SecurityScanner
+	CategoryUnknown           CategoryType = "unknown"
+	CategorySearchEngine      CategoryType = "search-engine"
+	CategoryMonitoring        CategoryType = "monitoring"
+	CategoryScreenshotService CategoryType = "screenshot-service"
+	CategoryScraper           CategoryType = "scraper"
+	CategorySecurityScanner   CategoryType = "security-scanner"
 )
 
-var categories = []string{
-	"unknown",
-	"search-engine",
-	"monitoring",
-	"screenshot-service",
-	"scraper",
-	"security-scanner",
-}
-
-func (c CategoryType) String() string {
-	return categories[c]
-}
-
-// MarshalText satisfies TextMarshaler
-func (c CategoryType) MarshalText() ([]byte, error) {
-	return []byte(c.String()), nil
-}
+func (c CategoryType) String() string { return string(c) }
 
 // UnmarshalText satisfies TextUnmarshaler
 func (c *CategoryType) UnmarshalText(text []byte) error {
 	enum := string(text)
-	for i := 0; i < len(categories); i++ {
-		if enum == categories[i] {
-			*c = CategoryType(i)
-			return nil
-		}
+	if !strictUnmarshal {
+		*c = CategoryType(enum)
+		return nil
 	}
-	return fmt.Errorf("unknown userstack category type: %s", enum)
+	switch enum {
+	case "unknown":
+		*c = CategoryUnknown
+	case "search-engine":
+		*c = CategorySearchEngine
+	case "monitoring":
+		*c = CategoryMonitoring
+	case "screenshot-service":
+		*c = CategoryScreenshotService
+	case "scraper":
+		*c = CategoryScraper
+	case "security-scanner":
+		*c = CategorySecurityScanner
+	default:
+		return &UnsupportedTypeError{typ: enum, fieldName: "category"}
+	}
+	return nil
 }

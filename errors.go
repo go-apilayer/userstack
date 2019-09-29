@@ -2,6 +2,19 @@ package userstack
 
 import "fmt"
 
+// UnsupportedTypeError describes an unmarshal error when encountering an unknown type.
+//
+// NOTE: only returned when running client in strict mode. See OptionStrictMode for more info.
+type UnsupportedTypeError struct {
+	fieldName string
+	typ       string
+}
+
+func (e *UnsupportedTypeError) Error() string {
+	return fmt.Sprintf("go-apilayer/userstack json: unsupported %s type: %s", e.fieldName, e.typ)
+}
+
+// ApiErr is a well formatted error returned by the userstack API.
 type ApiErr struct {
 	// Most unfortunate this "success" is also not returned in the successful state.
 	Success *bool `json:"success"`
@@ -17,7 +30,7 @@ func (e *ApiErr) Error() string {
 	return fmt.Sprintf("%d: %s", e.Err.Code, e.Err.Info)
 }
 
-// ErrorType represents a userstack error type.
+// ErrorType represents common userstack API errors.
 type ErrorType string
 
 const (
@@ -39,50 +52,48 @@ func (e ErrorType) Error() string {
 	return string(e)
 }
 
-// MarshalText satisfies TextMarshaler
-func (e ErrorType) MarshalText() ([]byte, error) {
-	return []byte(e.Error()), nil
-}
-
 // UnmarshalText satisfies TextUnmarshaler
 func (e *ErrorType) UnmarshalText(text []byte) error {
-	typ := ErrorType(text)
-	switch typ {
-	case ErrNotFound:
-		*e = typ
-	case ErrMissingAccessKey:
-		*e = typ
-	case ErrInvalidAccessKey:
-		*e = typ
-	case ErrInactiveUser:
-		*e = typ
-	case ErrInvalidAPIFunction:
-		*e = typ
-	case ErrUsageLimitReached:
-		*e = typ
-	case ErrFunctionAccessRestricted:
-		*e = typ
-	case ErrHTTPSAccessRestricted:
-		*e = typ
-	case ErrMissingUserAgent:
-		*e = typ
-	case ErrInvalidFields:
-		*e = typ
-	case ErrTooManyUserAgents:
-		*e = typ
-	case ErrBatchNotSupportedOnPlan:
-		*e = typ
-	default:
-		return fmt.Errorf("unknown userstack api error type: %s", typ)
+	enum := string(text)
+	if !strictUnmarshal {
+		*e = ErrorType(enum)
+		return nil
 	}
-
+	switch enum {
+	case "404_not_found":
+		*e = ErrNotFound
+	case "missing_access_key":
+		*e = ErrMissingAccessKey
+	case "invalid_access_key":
+		*e = ErrInvalidAccessKey
+	case "inactive_user":
+		*e = ErrInactiveUser
+	case "invalid_api_function":
+		*e = ErrInvalidAPIFunction
+	case "usage_limit_reached":
+		*e = ErrUsageLimitReached
+	case "function_access_restricted":
+		*e = ErrFunctionAccessRestricted
+	case "https_access_restricted":
+		*e = ErrHTTPSAccessRestricted
+	case "missing_user_agent":
+		*e = ErrMissingUserAgent
+	case "invalid_fields":
+		*e = ErrInvalidFields
+	case "too_many_user_agents":
+		*e = ErrTooManyUserAgents
+	case "batch_not_supported_on_plan":
+		*e = ErrBatchNotSupportedOnPlan
+	default:
+		return &UnsupportedTypeError{fieldName: "error", typ: enum}
+	}
 	return nil
 }
 
 // codeFromErrorType maps a userstack error type into a custom code (not to be confused with
 // an HTTP status code). Returns 0 if the ErrorType is invalid.
-func codeFromErrorType(typ ErrorType) int {
-	switch typ {
+func codeFromErrorType(e ErrorType) int {
+	switch e {
 	case ErrNotFound:
 		return 404 // User requested a resource which does not exist.
 	case ErrMissingAccessKey, ErrInvalidAccessKey:
