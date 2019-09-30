@@ -1,6 +1,7 @@
 package userstack
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -93,10 +94,15 @@ func (c *Client) debugf(format string, v ...interface{}) {
 	}
 }
 
-func (c *Client) Detect(userAgent string) (*Stack, error) {
-	// deep copy URL
+// deep copy URL
+func (c *Client) deepCopyURL() *url.URL {
 	u := new(url.URL)
 	*u = *c.url
+	return u
+}
+
+func (c *Client) Detect(ctx context.Context, userAgent string) (*Stack, error) {
+	u := c.deepCopyURL()
 
 	u.Path = "detect"
 	q := u.Query()
@@ -109,7 +115,7 @@ func (c *Client) Detect(userAgent string) (*Stack, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	req = req.WithContext(ctx)
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -118,10 +124,8 @@ func (c *Client) Detect(userAgent string) (*Stack, error) {
 
 	c.debugf("HTTP GET:%d header:%+v", resp.StatusCode, resp.Header)
 
-	// Not safe to rely on HTTP status codes for unmarshalling. API returns 200 for both
-	// successful and error states.
-	// We're also not going to embed the error inside the struct to avoid
-	// printing issues: github.com/golang/go/issues/34464.
+	// Not safe to rely on HTTP status codes for unmarshalling.
+	// API returns 200 for both successful and error states.
 
 	by, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

@@ -4,7 +4,7 @@ import "fmt"
 
 // UnsupportedTypeError describes an unmarshal error when encountering an unknown type.
 //
-// NOTE: only returned when running client in strict mode. See OptionStrictMode for more info.
+// NOTE: only returned when running client in strict mode. See Options for more info.
 type UnsupportedTypeError struct {
 	fieldName string
 	typ       string

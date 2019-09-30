@@ -3,11 +3,11 @@ package userstack
 import "net/http"
 
 var (
-	// Enabled with OptionStrictMode. Enabling running this client in strict mode,
-	// where custom UnmarshalText ensures types continue to be well-defined.
-	// In strict mode, if the API returns a string value we cannot express as
-	// a typed string constant, we fail and return
-	strictUnmarshal = false
+	// Disabled with OptionDisableStrictMode. By default client runs in "strict" mode,
+	// where custom UnmarshalText ensures types are well-defined.
+	// In strict mode, if the API returns a string value that cannot be expressed as
+	// a typed string constant, we fail and return a UnsupportedTypeError.
+	strictUnmarshal = true
 )
 
 // HTTPClient is the interface used to send HTTP requests. Users can provide their own implementation.
@@ -32,11 +32,9 @@ func OptionDebug(b bool) func(*Client) {
 	}
 }
 
-// OptionStrictMode forces custom UnmarshalText on well-known types.
-// Will cause client to error if userstack API returns a type the
-// client cannot express as a typed string constant.
-func OptionStrictMode() func(*Client) {
-	return func(c *Client) {
-		strictUnmarshal = true
-	}
+// OptionDisableStrictMode stops custom UnmarshalText on well-known types.
+// Will not cause client to error if userstack API returns a type
+// that cannot be expressed as a typed string constant.
+func OptionDisableStrictMode() func(*Client) {
+	return func(c *Client) { strictUnmarshal = false }
 }
