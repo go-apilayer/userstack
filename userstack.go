@@ -102,12 +102,28 @@ func (c *Client) deepCopyURL() *url.URL {
 	return u
 }
 
-func (c *Client) Detect(ctx context.Context, userAgent string) (*Stack, error) {
+type RequestParam struct {
+	// Set to your preferred output field(s). Follow docs to compose this.
+	Fields string
+}
+
+// Detect looks a single User-Agent string. Context may be nil, in which case context.Background() is used.
+//
+// Only first param struct is used, do not pass more than one.
+func (c *Client) Detect(ctx context.Context, userAgent string, params ...RequestParam) (*Stack, error) {
 	u := c.deepCopyURL()
 
 	u.Path = "detect"
 	q := u.Query()
 	q.Add("ua", userAgent)
+
+	if len(params) > 0 {
+		param := params[0]
+		if param.Fields != "" {
+			q.Add("fields", param.Fields)
+		}
+	}
+
 	u.RawQuery = q.Encode()
 
 	c.debugf("HTTP request: %v", u)
@@ -157,38 +173,38 @@ func (c *Client) Detect(ctx context.Context, userAgent string) (*Stack, error) {
 }
 
 type Stack struct {
-	Ua    string     `json:"ua"`
-	Type  EntityType `json:"type"`
-	Brand string     `json:"brand"` // Is this device.brand ?
-	Name  string     `json:"name"`  // Is this device.name ?
-	URL   string     `json:"url"`
+	Ua    string     `json:"ua,omitempty"`
+	Type  EntityType `json:"type,omitempty"`
+	Brand string     `json:"brand,omitempty"` // Is this device.brand ?
+	Name  string     `json:"name,omitempty"`  // Is this device.name ?
+	URL   string     `json:"url,omitempty"`
 	Os    struct {
-		Name         string `json:"name"`
-		Code         string `json:"code"`
-		URL          string `json:"url"`
-		Family       string `json:"family"`
-		FamilyCode   string `json:"family_code"`
-		FamilyVendor string `json:"family_vendor"`
-		Icon         string `json:"icon"`
-		IconLarge    string `json:"icon_large"`
+		Name         string `json:"name,omitempty"`
+		Code         string `json:"code,omitempty"`
+		URL          string `json:"url,omitempty"`
+		Family       string `json:"family,omitempty"`
+		FamilyCode   string `json:"family_code,omitempty"`
+		FamilyVendor string `json:"family_vendor,omitempty"`
+		Icon         string `json:"icon,omitempty"`
+		IconLarge    string `json:"icon_large,omitempty"`
 	} `json:"os"`
 	Device struct {
-		IsMobileDevice bool       `json:"is_mobile_device"`
-		Type           DeviceType `json:"type"`
-		Brand          string     `json:"brand"`
-		BrandCode      string     `json:"brand_code"`
-		BrandURL       string     `json:"brand_url"`
-		Name           string     `json:"name"`
+		IsMobileDevice bool       `json:"is_mobile_device,omitempty"`
+		Type           DeviceType `json:"type,omitempty"`
+		Brand          string     `json:"brand,omitempty"`
+		BrandCode      string     `json:"brand_code,omitempty"`
+		BrandURL       string     `json:"brand_url,omitempty"`
+		Name           string     `json:"name,omitempty"`
 	} `json:"device"`
 	Browser struct {
-		Name         string `json:"name"`
-		Version      string `json:"version"`
-		VersionMajor string `json:"version_major"`
-		Engine       string `json:"engine"`
+		Name         string `json:"name,omitempty"`
+		Version      string `json:"version,omitempty"`
+		VersionMajor string `json:"version_major,omitempty"`
+		Engine       string `json:"engine,omitempty"`
 	} `json:"browser"`
 	Crawler struct {
-		IsCrawler bool         `json:"is_crawler"`
+		IsCrawler bool         `json:"is_crawler,omitempty"`
 		Category  CategoryType `json:"category"`
-		LastSeen  string       `json:"last_seen"` // "2019-09-15 20:35:33"
+		LastSeen  string       `json:"last_seen,omitempty"` // "2019-09-15 20:35:33"
 	} `json:"crawler"`
 }
