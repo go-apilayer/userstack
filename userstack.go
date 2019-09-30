@@ -79,6 +79,7 @@ type Client struct {
 
 func (c *Client) debugf(format string, v ...interface{}) {
 	if c.debug {
+		// obfuscate the access key when printing debug lines.
 		for i := range v {
 			if u, ok := v[i].(*url.URL); ok && u != nil {
 				copy := new(url.URL)
@@ -115,9 +116,16 @@ func (c *Client) Detect(ctx context.Context, userAgent string) (*Stack, error) {
 	if err != nil {
 		return nil, err
 	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	req = req.WithContext(ctx)
 	resp, err := c.client.Do(req)
 	if err != nil {
+		switch e := err.(type) {
+		case *url.Error:
+			c.debugf("HTTP %s url error: %s", e.Op, e.Err.Error())
+		}
 		return nil, err
 	}
 	defer resp.Body.Close()
