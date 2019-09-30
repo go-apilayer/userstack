@@ -204,7 +204,7 @@ type Stack struct {
 	} `json:"browser"`
 	Crawler struct {
 		IsCrawler bool         `json:"is_crawler,omitempty"`
-		Category  CategoryType `json:"category"`
+		Category  CategoryType `json:"category,omitempty"`
 		LastSeen  string       `json:"last_seen,omitempty"` // "2019-09-15 20:35:33"
 	} `json:"crawler"`
 }
